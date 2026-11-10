@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<!-- Three.js is bundled under the MIT License. Copyright © 2010-2026 three.js authors. -->
+<!-- Music: "Frost Waltz" by Kevin MacLeod (incompetech.com), CC BY 3.0.
+     Source: https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100516
+     License: https://creativecommons.org/licenses/by/3.0/
+     Changes for this page: loudness normalization, edge fades and MP3 encoding. -->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#17121d" />
+<meta name="color-scheme" content="dark" />
+<title>霓虹旋转木马 · 梦幻夜曲</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #17121d; }
+  body {
+    -webkit-user-select: none; user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #stage { position: fixed; inset: 0; overflow: hidden; }
+  #scene {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%; display: block;
+    outline: none; touch-action: none;
+    cursor: grab;
+  }
+  #scene.dragging { cursor: grabbing; }
+
+  #veil {
+    position: fixed; inset: 0; z-index: 10;
+    display: grid; place-items: center;
+    background:
+      radial-gradient(circle at 50% 48%, rgba(118, 91, 120, .20), transparent 44%),
+      radial-gradient(circle at 50% 110%, rgba(198, 164, 119, .09), transparent 40%),
+      #17121d;
+    transition: opacity 1.35s cubic-bezier(.42, 0, .2, 1);
+  }
+  #veil.gone { opacity: 0; pointer-events: none; }
+  .sigil {
+    width: 88px; height: 88px; position: relative;
+    animation: breathe 2.8s ease-in-out infinite;
+  }
+  .sigil::before, .sigil::after {
+    content: ''; position: absolute; border-radius: 50%;
+    border: 1px solid rgba(198, 164, 119, .55);
+  }
+  .sigil::before { inset: 0; border-right-color: rgba(183, 126, 145, .68); border-left-color: rgba(118, 91, 120, .15); animation: spin 3.8s linear infinite; }
+  .sigil::after { inset: 14px; border-top-color: rgba(255, 240, 214, .9); border-bottom-color: transparent; animation: spin 2.6s linear infinite reverse; }
+  .sigil i {
+    position: absolute; inset: 34px; border-radius: 50%;
+    background: radial-gradient(circle at 40% 35%, #fff0d6 0%, #c6a477 30%, #765b78 62%, transparent 74%);
+    box-shadow: 0 0 22px rgba(198, 164, 119, .48), 0 0 52px rgba(118, 91, 120, .24);
+  }
+  .sigil span {
+    position: absolute; left: 50%; top: 50%; width: 5px; height: 5px;
+    margin: -2.5px 0 0 -2.5px; border-radius: 50%;
+    background: #fff0d6; box-shadow: 0 0 12px #c6a477;
+  }
+  #fallback {
+    position: fixed; inset: 0; z-index: 20; display: none;
+    place-items: center; padding: 32px; text-align: center;
+    color: #e9dcc5; background: #17121d;
+    font: 500 15px/1.8 ui-serif, Georgia, "Songti SC", serif; letter-spacing: .04em;
+  }
+  #fallback em { display: block; color: #c6a477; font-style: normal; font-size: 12px; opacity: .8; margin-top: 8px; letter-spacing: .16em; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes breathe { 0%, 100% { transform: scale(.94); filter: brightness(.82); } 50% { transform: scale(1.03); filter: brightness(1.18); } }
+  @media (prefers-reduced-motion: reduce) {
+    .sigil, .sigil::before, .sigil::after { animation-duration: 10s; }
+  }
+
+  /* --- background music dock ------------------------------------------------ */
+  #music-dock {
+    --m-gold: #c6a477;
+    --m-cream: #fff0d6;
+    --m-rose: #b77e91;
+    position: fixed;
+    right: max(20px, env(safe-area-inset-right));
+    bottom: max(20px, env(safe-area-inset-bottom));
+    z-index: 8;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: calc(100vw - 28px);
+    min-height: 54px;
+    padding: 8px 12px 8px 9px;
+    border: 1px solid rgba(198, 164, 119, .38);
+    border-radius: 18px;
+    color: var(--m-cream);
+    background:
+      radial-gradient(130% 180% at 12% 0%, rgba(183, 126, 145, .13), transparent 50%),
+      linear-gradient(135deg, rgba(30, 23, 33, .92), rgba(13, 10, 16, .84));
+    box-shadow:
+      0 12px 36px rgba(0, 0, 0, .48),
+      0 1px 0 rgba(255, 240, 214, .08) inset,
+      0 0 0 1px rgba(255, 240, 214, .025) inset;
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
+    backdrop-filter: blur(16px) saturate(1.2);
+    font-family: ui-serif, Georgia, "Songti SC", serif;
+    opacity: 0;
+    transform: translateY(10px) scale(.985);
+    animation: music-rise .85s cubic-bezier(.22, .8, .24, 1) 2.1s both;
+    pointer-events: none;
+  }
+  #music-dock > * { pointer-events: auto; }
+  #music-dock[data-error="true"] { border-color: rgba(183, 126, 145, .28); }
+
+  .music-toggle {
+    position: relative;
+    flex: 0 0 38px;
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 1px solid rgba(198, 164, 119, .48);
+    border-radius: 50%;
+    color: var(--m-cream);
+    background:
+      radial-gradient(circle at 36% 28%, rgba(255, 240, 214, .13), transparent 55%),
+      rgba(19, 14, 22, .45);
+    cursor: pointer;
+    transition: border-color .3s, background .3s, box-shadow .3s, transform .25s;
+    box-shadow: 0 0 16px rgba(198, 164, 119, .08), 0 0 10px rgba(198, 164, 119, .06) inset;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .music-toggle:hover {
+    border-color: rgba(255, 240, 214, .78);
+    background: rgba(60, 43, 46, .55);
+  }
+  .music-toggle:active { transform: scale(.94); }
+  .music-toggle:focus-visible,
+  .music-mute:focus-visible,
+  .music-credit-btn:focus-visible,
+  #music-volume:focus-visible {
+    outline: 1px solid var(--m-cream);
+    outline-offset: 3px;
+  }
+  .music-toggle:disabled { cursor: default; opacity: .45; }
+  .music-halo {
+    position: absolute;
+    inset: -5px;
+    border: 1px solid rgba(198, 164, 119, .34);
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity .45s;
+  }
+  #music-dock[data-playing="true"] .music-toggle {
+    border-color: rgba(255, 240, 214, .74);
+    background:
+      radial-gradient(circle at 36% 28%, rgba(255, 240, 214, .18), transparent 55%),
+      rgba(55, 39, 43, .62);
+    box-shadow: 0 0 22px rgba(198, 164, 119, .2), 0 0 12px rgba(255, 240, 214, .09) inset;
+  }
+  #music-dock[data-playing="true"] .music-halo {
+    opacity: 1;
+    animation: music-halo 3.2s ease-in-out infinite;
+  }
+  .music-icon { display: grid; place-items: center; width: 16px; height: 16px; }
+  .music-icon svg { display: block; width: 100%; height: 100%; fill: currentColor; }
+  .music-icon .music-icon-pause { display: none; }
+  #music-dock[data-playing="true"] .music-icon-play { display: none; }
+  #music-dock[data-playing="true"] .music-icon-pause { display: block; }
+
+  .music-copy { display: flex; flex-direction: column; min-width: 0; gap: 1px; }
+  .music-title-row { display: flex; align-items: baseline; gap: 5px; min-width: 0; white-space: nowrap; }
+  .music-title {
+    color: #f7ead7;
+    font-size: 13px;
+    line-height: 1.2;
+    letter-spacing: .045em;
+    text-shadow: 0 0 18px rgba(255, 240, 214, .13);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .music-byline {
+    color: rgba(198, 164, 119, .82);
+    font-size: 9px;
+    line-height: 1.2;
+    letter-spacing: .04em;
+  }
+  .music-credit-btn {
+    width: 14px;
+    height: 14px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: rgba(198, 164, 119, .58);
+    cursor: pointer;
+    opacity: .8;
+    transition: color .25s, opacity .25s;
+  }
+  .music-credit-btn svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.4; }
+  .music-credit-btn:hover { color: var(--m-cream); opacity: 1; }
+  .music-status-row { display: flex; align-items: center; gap: 6px; height: 11px; }
+  .music-state {
+    color: rgba(233, 220, 197, .6);
+    font-family: ui-sans-serif, "Segoe UI", "Microsoft YaHei", sans-serif;
+    font-size: 9.5px;
+    line-height: 1;
+    letter-spacing: .07em;
+    white-space: nowrap;
+    transition: color .3s;
+  }
+  #music-dock[data-playing="true"] .music-state { color: rgba(233, 220, 197, .8); }
+  #music-dock[data-muted="true"] .music-state { color: rgba(183, 126, 145, .8); }
+  .music-eq { display: flex; align-items: flex-end; gap: 1.5px; width: 12px; height: 10px; flex: 0 0 12px; }
+  .music-eq i {
+    display: block;
+    width: 1.5px;
+    height: 100%;
+    border-radius: 1px;
+    background: linear-gradient(to top, rgba(198, 164, 119, .3), var(--m-cream));
+    transform: scaleY(.22);
+    transform-origin: bottom;
+    opacity: .28;
+    transition: opacity .25s;
+  }
+  .music-eq i:nth-child(2) { height: 68%; }
+  .music-eq i:nth-child(3) { height: 86%; }
+  .music-eq i:nth-child(4) { height: 52%; }
+  #music-dock[data-playing="true"] .music-eq i {
+    opacity: .9;
+    animation: music-bar .85s ease-in-out infinite alternate;
+  }
+  #music-dock[data-playing="true"] .music-eq i:nth-child(2) { animation-delay: -.28s; }
+  #music-dock[data-playing="true"] .music-eq i:nth-child(3) { animation-delay: -.52s; }
+  #music-dock[data-playing="true"] .music-eq i:nth-child(4) { animation-delay: -.13s; }
+  #music-dock[data-muted="true"] .music-eq i { animation-play-state: paused; opacity: .2; }
+
+  .music-controls {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    margin-left: auto;
+    padding-left: 9px;
+    border-left: 1px solid rgba(198, 164, 119, .19);
+  }
+  .music-mute {
+    width: 23px;
+    height: 23px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: rgba(198, 164, 119, .8);
+    cursor: pointer;
+    transition: color .25s, opacity .25s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .music-mute:hover { color: var(--m-cream); }
+  .music-mute:disabled { cursor: default; opacity: .4; }
+  .music-mute .music-icon { width: 15px; height: 15px; }
+  .music-mute .music-icon-muted { display: none; }
+  #music-dock[data-muted="true"] .music-mute .music-icon-sound { display: none; }
+  #music-dock[data-muted="true"] .music-mute .music-icon-muted { display: block; }
+  #music-volume {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 66px;
+    height: 18px;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    cursor: pointer;
+  }
+  #music-volume:disabled { cursor: default; opacity: .4; }
+  #music-volume::-webkit-slider-runnable-track {
+    height: 2px;
+    border-radius: 99px;
+    background: linear-gradient(90deg, rgba(198, 164, 119, .74), rgba(198, 164, 119, .2));
+  }
+  #music-volume::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 9px;
+    height: 9px;
+    margin-top: -3.5px;
+    border: 1px solid rgba(255, 240, 214, .9);
+    border-radius: 50%;
+    background: #ecd9bc;
+    box-shadow: 0 0 8px rgba(198, 164, 119, .55), 0 0 2px rgba(0, 0, 0, .6);
+  }
+  #music-volume::-moz-range-track {
+    height: 2px;
+    border-radius: 99px;
+    background: linear-gradient(90deg, rgba(198, 164, 119, .74), rgba(198, 164, 119, .2));
+  }
+  #music-volume::-moz-range-thumb {
+    width: 8px;
+    height: 8px;
+    border: 1px solid rgba(255, 240, 214, .9);
+    border-radius: 50%;
+    background: #ecd9bc;
+    box-shadow: 0 0 8px rgba(198, 164, 119, .55);
+  }
+  .music-volume-label {
+    width: 27px;
+    color: rgba(198, 164, 119, .78);
+    font-family: ui-sans-serif, "Segoe UI", "Microsoft YaHei", sans-serif;
+    font-size: 9px;
+    letter-spacing: .02em;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    transition: color .25s;
+  }
+  #music-dock[data-muted="true"] .music-volume-label { color: rgba(183, 126, 145, .85); }
+
+  #music-credits {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 11px);
+    width: min(330px, calc(100vw - 28px));
+    padding: 14px 15px 12px;
+    border: 1px solid rgba(198, 164, 119, .4);
+    border-radius: 14px;
+    color: #e9dcc5;
+    background:
+      radial-gradient(100% 120% at 90% 0%, rgba(183, 126, 145, .1), transparent 50%),
+      linear-gradient(150deg, rgba(32, 24, 33, .98), rgba(13, 10, 16, .98));
+    box-shadow: 0 16px 44px rgba(0, 0, 0, .55);
+    font-family: ui-serif, Georgia, "Songti SC", serif;
+    font-size: 11px;
+    line-height: 1.7;
+    letter-spacing: .025em;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(5px);
+    transition: opacity .22s ease, transform .22s ease, visibility .22s;
+  }
+  #music-dock[data-credits-open="true"] #music-credits {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+  .music-credits-kicker {
+    display: block;
+    margin-bottom: 5px;
+    color: rgba(198, 164, 119, .64);
+    font-family: ui-sans-serif, "Segoe UI", "Microsoft YaHei", sans-serif;
+    font-size: 8px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+  }
+  .music-credits-title { color: #fff0d6; font-size: 14px; letter-spacing: .04em; margin-bottom: 2px; }
+  #music-credits p { margin: 0 0 6px; }
+  #music-credits p:last-child { margin-bottom: 0; }
+  #music-credits a {
+    color: #f1dfc3;
+    text-decoration: underline;
+    text-decoration-color: rgba(198, 164, 119, .42);
+    text-underline-offset: 2px;
+  }
+  #music-credits a:hover { color: #fff0d6; text-decoration-color: rgba(255, 240, 214, .8); }
+  #music-credits .music-credits-fine { color: rgba(233, 220, 197, .48); font-size: 9.5px; line-height: 1.6; margin-top: 9px; }
+
+  @keyframes music-rise {
+    from { opacity: 0; transform: translateY(10px) scale(.985); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes music-halo {
+    0%, 100% { transform: scale(1); opacity: .35; }
+    50% { transform: scale(1.16); opacity: .08; }
+  }
+  @keyframes music-bar {
+    from { transform: scaleY(.22); }
+    to { transform: scaleY(1); }
+  }
+
+  @media (max-width: 640px) {
+    #music-dock {
+      right: max(12px, env(safe-area-inset-right));
+      bottom: max(12px, env(safe-area-inset-bottom));
+      gap: 8px;
+      min-height: 48px;
+      padding: 6px 9px 6px 7px;
+      border-radius: 16px;
+    }
+    .music-toggle { flex-basis: 34px; width: 34px; height: 34px; }
+    .music-title { font-size: 12.5px; }
+    .music-byline { font-size: 8.5px; }
+    .music-state { font-size: 9px; }
+    .music-controls { padding-left: 7px; gap: 2px; }
+    #music-volume { width: 52px; }
+    .music-volume-label { width: 25px; font-size: 8.5px; }
+  }
+  @media (max-width: 380px) {
+    .music-byline { display: none; }
+    .music-title { font-size: 12px; }
+    #music-volume { width: 42px; }
+    .music-volume-label { display: none; }
+    #music-credits { width: calc(100vw - 24px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #music-dock { animation: none; opacity: 1; transform: none; }
+    .music-halo,
+    #music-dock[data-playing="true"] .music-eq i { animation: none; }
+  }
+</style>
+</head>
+<body>
+  <main id="stage">
+    <canvas id="scene" aria-label="香槟金与暗夜玫瑰色调的旋转木马 3D 场景"></canvas>
+  </main>
+  <div id="veil" aria-hidden="true"><div class="sigil"><i></i><span></span></div></div>
+  <div id="fallback">此页面需要 WebGL 2<br><em>请使用最新版 Chrome / Edge / Safari 打开</em></div>
+
+  <!-- Background music. Frost Waltz by Kevin MacLeod, CC BY 3.0; edited for this page. -->
+  <section id="music-dock" class="music-dock" aria-label="背景音乐控制">
+    <button id="music-toggle" class="music-toggle" type="button" aria-label="播放背景音乐" aria-pressed="false" title="播放背景音乐">
+      <span class="music-halo" aria-hidden="true"></span>
+      <span class="music-icon" aria-hidden="true">
+        <svg class="music-icon-play" viewBox="0 0 24 24"><path d="M8.4 5.2c0-.6.65-.95 1.15-.62l9.3 6.15c.45.3.45.96 0 1.26l-9.3 6.15c-.5.33-1.15-.02-1.15-.62V5.2Z"/></svg>
+        <svg class="music-icon-pause" viewBox="0 0 24 24"><rect x="6.6" y="5" width="3.7" height="14" rx="1.2"/><rect x="13.7" y="5" width="3.7" height="14" rx="1.2"/></svg>
+      </span>
+    </button>
+    <div class="music-copy">
+      <div class="music-title-row">
+        <span class="music-title" title="Frost Waltz">Frost Waltz</span>
+        <span class="music-byline">Kevin MacLeod</span>
+        <button id="music-credit-toggle" class="music-credit-btn" type="button" aria-label="查看背景音乐版权信息" aria-expanded="false" title="音乐版权信息">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.2M12 7.5v.2"/></svg>
+        </button>
+      </div>
+      <div class="music-status-row">
+        <span class="music-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+        <span id="music-state" class="music-state" role="status" aria-live="polite">点击播放</span>
+      </div>
+    </div>
+    <div class="music-controls">
+      <button id="music-mute" class="music-mute" type="button" aria-label="静音" aria-pressed="false" title="静音">
+        <svg class="music-icon music-icon-sound" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.4h3.4L12 5.3c.5-.4 1.2 0 1.2.6v12.2c0 .6-.7 1-1.2.6l-4.6-4.1H4c-.4 0-.7-.3-.7-.7V10c0-.4.3-.6.7-.6Z" fill="currentColor" stroke="none"/><path d="M16 9.2a4.2 4.2 0 0 1 0 5.6M18.4 6.8a7.6 7.6 0 0 1 0 10.4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <svg class="music-icon music-icon-muted" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.4h3.4L12 5.3c.5-.4 1.2 0 1.2.6v12.2c0 .6-.7 1-1.2.6l-4.6-4.1H4c-.4 0-.7-.3-.7-.7V10c0-.4.3-.6.7-.6Z" fill="currentColor" stroke="none"/><path d="m16.2 9.6 4.6 4.8m0-4.8-4.6 4.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+      <input id="music-volume" type="range" min="0" max="100" step="1" value="30" aria-label="背景音乐音量" aria-valuetext="30%" />
+      <span id="music-volume-label" class="music-volume-label">30%</span>
+    </div>
+    <div id="music-credits" class="music-credits" role="note" aria-label="背景音乐版权信息" aria-hidden="true">
+      <span class="music-credits-kicker">Background music</span>
+      <p class="music-credits-title">Frost Waltz</p>
+      <p>Kevin MacLeod · 2008 · <a href="https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100516" target="_blank" rel="noopener noreferrer">incompetech.com</a></p>
+      <p>Licensed under <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener noreferrer">Creative Commons Attribution 3.0 (CC BY 3.0)</a>. Edited for this page: loudness normalization, edge fades and MP3 encoding; the full track loops.</p>
+      <p class="music-credits-fine">Music copyright remains with Kevin MacLeod. This licence applies to the audio only.</p>
+    </div>
+  </section>
+  <audio id="bg-music" src="./assets/music.mp3" preload="auto" loop playsinline hidden aria-hidden="true"></audio>
+
+  <noscript><style>#veil{display:none}#fallback{display:grid}#music-dock{display:none}</style></noscript>
+  <script src="./bundle.js"></script>
+  <script src="./music-ui.js"></script>
+</body>
+</html>

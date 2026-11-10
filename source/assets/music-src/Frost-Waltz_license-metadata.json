@@ -1,0 +1,85 @@
+﻿{
+    "DateTime":  {
+                     "value":  "2017-12-11 12:53:49",
+                     "source":  "mediawiki-metadata",
+                     "hidden":  ""
+                 },
+    "ObjectName":  {
+                       "value":  "Frost Waltz (ISRC USUAN1100516)",
+                       "source":  "mediawiki-metadata"
+                   },
+    "CommonsMetadataExtension":  {
+                                     "value":  1.2,
+                                     "source":  "extension",
+                                     "hidden":  ""
+                                 },
+    "Categories":  {
+                       "value":  "Soundtrack music from Incompetech|Music files uploaded by Fæ|Kerbal Space Program soundtrack",
+                       "source":  "commons-categories",
+                       "hidden":  ""
+                   },
+    "Assessments":  {
+                        "value":  "",
+                        "source":  "commons-categories",
+                        "hidden":  ""
+                    },
+    "ImageDescription":  {
+                             "value":  "Frost Waltz\n\u003cbr\u003eA calm buy mysterious composition that uses Glockenspiel and Celesta throughout.  French Horns and Bass intercede throughout to accompany the Glockenspiel and Celesta.  Violin and Viola in the background throughout the piece.",
+                             "source":  "commons-desc-page"
+                         },
+    "DateTimeOriginal":  {
+                             "value":  "2008-11-21",
+                             "source":  "commons-desc-page"
+                         },
+    "Credit":  {
+                   "value":  "\u003cp\u003emp3: \u003ca rel=\"nofollow\" class=\"external free\" href=\"https://incompetech.com/music/royalty-free/mp3-royaltyfree/Frost%20Waltz.mp3\"\u003ehttps://incompetech.com/music/royalty-free/mp3-royaltyfree/Frost%20Waltz.mp3\u003c/a\u003e\n\u003c/p\u003e\n\u003cbr\u003eInfo: \u003ca rel=\"nofollow\" class=\"external free\" href=\"https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100516\"\u003ehttps://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100516\u003c/a\u003e",
+                   "source":  "commons-desc-page"
+               },
+    "Artist":  {
+                   "value":  "\u003cbdi\u003e\u003ca href=\"https://en.wikipedia.org/wiki/en:Kevin_MacLeod\" class=\"extiw\" title=\"w:en:Kevin MacLeod\"\u003e\u003cspan title=\"American composer and music producer (born 1972)\"\u003eKevin MacLeod\u003c/span\u003e\u003c/a\u003e\u003c/bdi\u003e",
+                   "source":  "commons-desc-page"
+               },
+    "Permission":  {
+                       "value":  "\u003ca rel=\"nofollow\" class=\"external free\" href=\"https://creativecommons.org/licenses/by/3.0/\"\u003ehttps://creativecommons.org/licenses/by/3.0/\u003c/a\u003e",
+                       "source":  "commons-desc-page",
+                       "hidden":  ""
+                   },
+    "LicenseShortName":  {
+                             "value":  "CC BY 3.0",
+                             "source":  "commons-desc-page",
+                             "hidden":  ""
+                         },
+    "UsageTerms":  {
+                       "value":  "Creative Commons Attribution 3.0",
+                       "source":  "commons-desc-page"
+                   },
+    "AttributionRequired":  {
+                                "value":  "true",
+                                "source":  "commons-desc-page",
+                                "hidden":  ""
+                            },
+    "Attribution":  {
+                        "value":  "Frost Waltz Kevin MacLeod (incompetech.com)",
+                        "source":  "commons-desc-page",
+                        "hidden":  ""
+                    },
+    "LicenseUrl":  {
+                       "value":  "https://creativecommons.org/licenses/by/3.0",
+                       "source":  "commons-desc-page"
+                   },
+    "Copyrighted":  {
+                        "value":  "True",
+                        "source":  "commons-desc-page",
+                        "hidden":  ""
+                    },
+    "Restrictions":  {
+                         "value":  "",
+                         "source":  "commons-desc-page",
+                         "hidden":  ""
+                     },
+    "License":  {
+                    "value":  "cc-by-3.0",
+                    "source":  "commons-templates",
+                    "hidden":  ""
+                }
+}

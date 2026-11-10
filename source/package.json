@@ -1,0 +1,15 @@
+{
+  "name": "neon-carousel",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Belle Epoque Three.js carousel: five-tier canopy, embedded music and dual independent horse rings.",
+  "scripts": {
+    "build": "node build.mjs",
+    "build:standalone": "node build.mjs --standalone"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.9",
+    "three": "0.180.0"
+  }
+}

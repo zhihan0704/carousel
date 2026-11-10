@@ -23,7 +23,7 @@
   <img src="docs/media/carousel-preview.gif" alt="双环独立反向旋转演示" width="760" />
 </p>
 
-<p align="center"><sub>GIF 为录屏节选；完整视频见上方链接。视频由项目作者录制并裁去浏览器边框。</sub></p>
+<p align="center"><sub>GIF 为录屏节选；完整视频见上方链接。视频由项目作者录制，已裁去浏览器边框并转码为 1280 × 702 / 30fps；原始 120fps 录屏保留在本地，未入库。</sub></p>
 
 ---
 
